@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{{ car.make }} {{ car.model }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+      <img src="{{ url_for('static', filename='images/cars/' + car.id|string + '.jpg') }}"
+        class="card-img-top" 
+        onerror="this.src='{{ url_for('static', filename='images/default-car.jpg') }}'">
+    </div>
+    <div class="col-md-6">
+        <h2>{{ car.make }} {{ car.model }}</h2>
+        <p class="text-muted">{{ car.year }} • {{ car.vehicle_type|upper }}</p>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>${{ car.price_per_day }} <small class="text-muted">/ day</small></h5>
+                <p class="mb-2"><strong>Location:</strong> {{ car.location|title }}</p>
+                {% if car.insurances %}
+                <p><strong>Insurance:</strong> {{ car.insurances[0].provider }} ({{ car.insurances[0].type }})</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <div class="card">
+            <div class="card-header">
+                <h5>Book This Car</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('frontend_cars.reserve', car_id=car.id) }}">
+                    {{ form.hidden_tag() }}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.start_date.label(class="form-label") }}
+                            {{ form.start_date(class="form-control", type="date") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.end_date.label(class="form-label") }}
+                            {{ form.end_date(class="form-control", type="date") }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Reserve Now</button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            Please <a href="{{ url_for('auth.login') }}">login</a> to book this car.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

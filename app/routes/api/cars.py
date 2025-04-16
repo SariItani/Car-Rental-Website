@@ -187,6 +187,17 @@ def search_cars():
         
     except Exception as e:
         return jsonify({"error": "Search failed", "details": str(e)}), 500
+    
+@bp.route('/recommended')
+def get_recommended_vehicles():
+    terrain = request.args.get('terrain')  # desert/mountains/city
+    if terrain == "desert":
+        cars = Car.query.filter_by(vehicle_type='4x4').all()
+    elif terrain == "mountains":
+        cars = Car.query.filter(or_(Car.vehicle_type=='4x4', Car.vehicle_type=='suv')).all()
+    else:  # city
+        cars = Car.query.filter_by(vehicle_type='sedan').all()
+    return jsonify([car.to_dict() for car in cars])
 
 @bp.route('/reservations/<int:reservation_id>/damage', methods=['POST'])
 @jwt_required()

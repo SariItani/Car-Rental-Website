@@ -1,3 +1,4 @@
+from pathlib import Path
 from app import create_app
 from app.models import User, Car, Insurance, db
 from datetime import date, timedelta
@@ -90,10 +91,7 @@ def init_db():
             db.session.add_all(insurances)
             
             db.session.commit()
-            print("Database initialized with:")
-            print("- Admin user (admin@rental.com / admin123)")
-            print("- Sample client (client@example.com / client123)")
-            print("- 3 cars with insurance")
+            print("Database initialized.")
         else:
             print("Database already initialized")
 

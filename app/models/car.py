@@ -48,6 +48,19 @@ class Car(db.Model):
         ).first()
         
         self.status = 'reserved' if active_reservation else 'available'
+
+    def to_dict(self):
+        """Convert car object to dictionary"""
+        return {
+            'id': self.id,
+            'make': self.make,
+            'model': self.model,
+            'year': self.year,
+            'price_per_day': float(self.price_per_day),
+            'status': self.status,
+            'vehicle_type': self.vehicle_type,
+            'location': self.location
+        }
     
     def __repr__(self):
         return f'<Car {self.make} {self.model} ({self.year})>'

@@ -408,5 +408,66 @@ class TestCarRentalAPI(unittest.TestCase):
             headers={"Authorization": f"Bearer {self.admin_token}"}
         )
 
+    def test_18_terrain_recommendations(self):
+        # Create test cars for different terrains
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # Desert vehicle (4x4)
+        desert_car = {
+            "make": "DesertJeep",
+            "model": "Wrangler",
+            "year": 2023,
+            "price_per_day": 100.00,
+            "vehicle_type": "4x4",
+            "location": "tourist_site"  # Using valid location from VALID_LOCATIONS
+        }
+        requests.post(f"{BASE_URL}/admin/cars", json=desert_car, headers=headers)
+        
+        # Mountain vehicle (SUV)
+        mountain_car = {
+            "make": "MountainSUV",
+            "model": "Explorer",
+            "year": 2022,
+            "price_per_day": 80.00,
+            "vehicle_type": "suv",
+            "location": "hotel"  # Using valid location from VALID_LOCATIONS
+        }
+        requests.post(f"{BASE_URL}/admin/cars", json=mountain_car, headers=headers)
+        
+        # City vehicle (sedan)
+        city_car = {
+            "make": "CitySedan",
+            "model": "Camry",
+            "year": 2023,
+            "price_per_day": 50.00,
+            "vehicle_type": "sedan",
+            "location": "downtown"  # Using valid location from VALID_LOCATIONS
+        }
+        requests.post(f"{BASE_URL}/admin/cars", json=city_car, headers=headers)
+        
+        # Test desert recommendations
+        response = requests.get(f"{BASE_URL}/cars/recommended?terrain=desert")
+        self.assertEqual(response.status_code, 200)
+        desert_cars = response.json()
+        self.assertTrue(all(car['vehicle_type'] == '4x4' for car in desert_cars))
+        
+        # Test mountain recommendations
+        response = requests.get(f"{BASE_URL}/cars/recommended?terrain=mountains")
+        self.assertEqual(response.status_code, 200)
+        mountain_cars = response.json()
+        self.assertTrue(all(car['vehicle_type'] in ['4x4', 'suv'] for car in mountain_cars))
+        
+        # Test city recommendations (default)
+        response = requests.get(f"{BASE_URL}/cars/recommended?terrain=city")
+        self.assertEqual(response.status_code, 200)
+        city_cars = response.json()
+        self.assertTrue(all(car['vehicle_type'] == 'sedan' for car in city_cars))
+        
+        # Test no terrain specified (should default to city)
+        response = requests.get(f"{BASE_URL}/cars/recommended")
+        self.assertEqual(response.status_code, 200)
+        default_cars = response.json()
+        self.assertTrue(all(car['vehicle_type'] == 'sedan' for car in default_cars))
+
 if __name__ == "__main__":
     unittest.main()

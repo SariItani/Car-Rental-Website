@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Available Cars{% endblock %}
+
+{% block content %}
+<div class="row">
+    <h1 class="mb-4">Available Cars</h1>
+    
+    <!-- Search Form -->
+    <form class="mb-4" action="{{ url_for('frontend_cars.list') }}" method="get">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="make" class="form-control" placeholder="Make (e.g. Toyota)">
+            </div>
+            <div class="col-md-3">
+                <select name="type" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="sedan">Sedan</option>
+                    <option value="suv">SUV</option>
+                    <option value="4x4">4x4</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Car List -->
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for car in cars %}
+        <div class="col">
+            <div class="card h-100">
+                <img src="{{ url_for('static', filename='images/cars/' + car.id|string + '.jpg') }}"
+                    class="card-img-top" 
+                    onerror="this.src='{{ url_for('static', filename='images/default-car.jpg') }}'">
+                <div class="card-body">
+                    <h5 class="card-title">{{ car.make }} {{ car.model }}</h5>
+                    <p class="card-text">
+                        <strong>Type:</strong> {{ car.vehicle_type|upper }}<br>
+                        <strong>Price:</strong> ${{ car.price_per_day }}/day
+                    </p>
+                    <a href="{{ url_for('frontend_cars.detail', car_id=car.id) }}" class="btn btn-primary">
+                        View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
