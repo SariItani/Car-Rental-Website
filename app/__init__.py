@@ -4,7 +4,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from config import Config
-# from flask_bootstrap import Bootstrap
 from flask_babel import Babel
 from flask_login import LoginManager
 from flask_caching import Cache
@@ -25,13 +24,18 @@ def create_app(config_class=Config):
     
     # Initialize extensions
     cache.init_app(app)
-    # Bootstrap(app)
     babel.init_app(app)
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    
+    # Add user loader
+    from app.models.user import User
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
     
     # Register blueprints
     from app.routes.api.auth import bp as auth_bp
