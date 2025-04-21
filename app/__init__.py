@@ -7,7 +7,9 @@ from config import Config
 from flask_babel import Babel
 from flask_login import LoginManager
 from flask_caching import Cache
+from flask_wtf.csrf import CSRFProtect
 
+csrf = CSRFProtect()
 babel = Babel()
 login_manager = LoginManager()
 db = SQLAlchemy()
@@ -23,13 +25,14 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     
     # Initialize extensions
+    csrf.init_app(app)
     cache.init_app(app)
     babel.init_app(app)
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'frontend_auth.login'
     
     # Add user loader
     from app.models.user import User
@@ -44,9 +47,11 @@ def create_app(config_class=Config):
     from app.routes.api.payments import bp as payments_bp
     from app.routes.frontend.main import bp as main_bp
     from app.routes.frontend.cars import bp as frontend_cars_bp
+    from app.routes.frontend.auth import bp as frontend_auth_bp
 
     app.register_blueprint(main_bp, url_prefix='/', template_folder='../templates')
     app.register_blueprint(frontend_cars_bp, template_folder='../templates')
+    app.register_blueprint(frontend_auth_bp, template_folder='../templates')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(cars_bp, url_prefix='/api/cars')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
