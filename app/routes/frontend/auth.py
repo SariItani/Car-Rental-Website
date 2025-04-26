@@ -32,6 +32,9 @@ def login():
                     flash('User not found', 'danger')
                     return redirect(url_for('frontend_auth.login'))
                 
+                if not user.api_token:
+                    user.generate_api_token()
+                
                 login_user(user)
                 access_token = create_access_token(
                     identity=user.id,

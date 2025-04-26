@@ -15,6 +15,11 @@
         
         <div class="card mb-4">
             <div class="card-body">
+                {% if current_user.is_authenticated %}
+                <button id="favorite-btn" class="btn btn-outline-primary">
+                    ♡ Add to Favorites
+                </button>
+                {% endif %}
                 <h5>${{ car.price_per_day }} <small class="text-muted">/ day</small></h5>
                 <p class="mb-2"><strong>Location:</strong> {{ car.location|title }}</p>
                 {% if car.insurances %}
@@ -52,4 +57,22 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('favorite-btn').addEventListener('click', async () => {
+        const response = await fetch(`/api/favorites/cars/${CAR_ID}/favorite`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${USER_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            alert('Added to favorites!');
+        }
+    });
+    </script>
 {% endblock %}

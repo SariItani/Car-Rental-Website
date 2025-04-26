@@ -1,6 +1,7 @@
 from app import db
 from datetime import datetime
 
+from app.models.favorite import Favorite
 from app.models.reservation import Reservation
 
 class Car(db.Model):
@@ -49,9 +50,9 @@ class Car(db.Model):
         
         self.status = 'reserved' if active_reservation else 'available'
 
-    def to_dict(self):
+    def to_dict(self, user_id=None):
         """Convert car object to dictionary"""
-        return {
+        data = {
             'id': self.id,
             'make': self.make,
             'model': self.model,
@@ -61,6 +62,11 @@ class Car(db.Model):
             'vehicle_type': self.vehicle_type,
             'location': self.location
         }
+        if user_id:
+            data['is_favorited'] = Favorite.query.filter_by(
+                user_id=user_id, car_id=self.id
+            ).first() is not None
+        return data
     
     def __repr__(self):
         return f'<Car {self.make} {self.model} ({self.year})>'

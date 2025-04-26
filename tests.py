@@ -469,5 +469,23 @@ class TestCarRentalAPI(unittest.TestCase):
         default_cars = response.json()
         self.assertTrue(all(car['vehicle_type'] == 'sedan' for car in default_cars))
 
+    def test_19_favorites(self):
+        headers = {"Authorization": f"Bearer {self.client_token}"}
+        
+        # Test adding favorite
+        response = requests.post(
+            f"{BASE_URL}/favorites/cars/{self.test_car_id}/favorite",
+            headers=headers
+        )
+        self.assertEqual(response.status_code, 201)
+        
+        # Test getting favorites
+        response = requests.get(
+            f"{BASE_URL}/favorites/users/me/favorites",
+            headers=headers
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any(f['car_id'] == self.test_car_id for f in response.json()))
+
 if __name__ == "__main__":
     unittest.main()
