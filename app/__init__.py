@@ -47,16 +47,20 @@ def create_app(config_class=Config):
     from app.routes.api.admin import bp as admin_bp
     from app.routes.api.payments import bp as payments_bp
     from app.routes.api.favorites import bp as favorites_bp
+    from app.routes.api.refund import bp as refund_bp
+
     from app.routes.frontend.main import bp as main_bp
     from app.routes.frontend.cars import bp as frontend_cars_bp
     from app.routes.frontend.auth import bp as frontend_auth_bp
     from app.routes.frontend.dashboard import bp as dashboard_bp
-    
+
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard', template_folder='../templates')
     app.register_blueprint(main_bp, url_prefix='/', template_folder='../templates')
     app.register_blueprint(frontend_cars_bp, template_folder='../templates')
     app.register_blueprint(frontend_auth_bp, template_folder='../templates')
+    
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(refund_bp, url_prefix='/api/refunds')
     app.register_blueprint(favorites_bp, url_prefix='/api/favorites')
     app.register_blueprint(cars_bp, url_prefix='/api/cars')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')

@@ -50,7 +50,6 @@ def get_car_details(car_id):
 @jwt_required()
 def reserve_car():
     data = request.get_json()
-    
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
         
@@ -115,6 +114,9 @@ def reserve_car():
 
         # Calculate price
         rental_type = data.get('rental_type', 'daily')
+        if rental_type not in ['daily', 'monthly', 'yearly']:
+            return jsonify({"error": "Invalid rental type"}), 400
+        
         days = (end_date - start_date).days
         
         if rental_type == 'monthly':
@@ -161,7 +163,8 @@ def search_cars():
         max_price = request.args.get('max_price', type=float)
         vehicle_type = request.args.get('type')
         location = request.args.get('location')
-        
+        category = request.args.get('category')
+
         query = Car.query.filter_by(status='available')
         
         if vehicle_type and vehicle_type in Car.VALID_TYPES:
@@ -174,6 +177,8 @@ def search_cars():
             query = query.filter(Car.price_per_day >= min_price)
         if max_price is not None and max_price > 0:
             query = query.filter(Car.price_per_day <= max_price)
+        if category in ['small', 'medium', 'large']:
+            query = query.filter_by(category=category)
 
         cars = query.all()
         return jsonify([{
@@ -245,3 +250,12 @@ def report_damage(reservation_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+    
+@bp.route('/recommended', methods=['GET'])
+def get_recommended():
+    terrain = request.args.get('terrain', 'city')
+    if terrain not in Car.VALID_LOCATIONS:
+        return jsonify({"error": "Invalid terrain type"}), 400
+    
+    cars = Car.get_by_terrain(terrain).filter_by(status='available').all()
+    return jsonify([car.to_dict() for car in cars])

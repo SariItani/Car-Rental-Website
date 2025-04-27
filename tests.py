@@ -30,7 +30,7 @@ class TestCarRentalAPI(unittest.TestCase):
                 "year": 2023,
                 "price_per_day": 50.00,
                 "vehicle_type": "sedan",
-                "location": "downtown"
+                "location": "city"
             }
             headers = {"Authorization": f"Bearer {cls.admin_token}"}
             response = requests.post(f"{BASE_URL}/admin/cars", json=car_data, headers=headers)
@@ -170,7 +170,7 @@ class TestCarRentalAPI(unittest.TestCase):
             "year": 2023,
             "price_per_day": 50.00,
             "vehicle_type": "sedan",
-            "location": "downtown"
+            "location": "city"
         }
         response = requests.post(
             f"{BASE_URL}/admin/cars",
@@ -204,7 +204,7 @@ class TestCarRentalAPI(unittest.TestCase):
             "year": 2023,
             "price_per_day": 50.00,
             "vehicle_type": "sedan",
-            "location": "downtown"
+            "location": "city"
         }
         response = requests.post(
             f"{BASE_URL}/admin/cars",
@@ -260,7 +260,7 @@ class TestCarRentalAPI(unittest.TestCase):
             "year": 2023,
             "price_per_day": 75.00,
             "vehicle_type": "suv",
-            "location": "hotel"
+            "location": "snow"
         }
         response = requests.post(f"{BASE_URL}/admin/cars", json=data, headers=headers)
         self.assertEqual(response.status_code, 201)
@@ -366,7 +366,7 @@ class TestCarRentalAPI(unittest.TestCase):
             "year": 2023,
             "price_per_day": 50.00,
             "vehicle_type": "sedan",
-            "location": "downtown"
+            "location": "desert"
         }
         response = requests.post(
             f"{BASE_URL}/admin/cars",
@@ -419,7 +419,7 @@ class TestCarRentalAPI(unittest.TestCase):
             "year": 2023,
             "price_per_day": 100.00,
             "vehicle_type": "4x4",
-            "location": "tourist_site"  # Using valid location from VALID_LOCATIONS
+            "location": "desert"  # Using valid location from VALID_LOCATIONS
         }
         requests.post(f"{BASE_URL}/admin/cars", json=desert_car, headers=headers)
         
@@ -430,7 +430,7 @@ class TestCarRentalAPI(unittest.TestCase):
             "year": 2022,
             "price_per_day": 80.00,
             "vehicle_type": "suv",
-            "location": "hotel"  # Using valid location from VALID_LOCATIONS
+            "location": "mountain"  # Using valid location from VALID_LOCATIONS
         }
         requests.post(f"{BASE_URL}/admin/cars", json=mountain_car, headers=headers)
         
@@ -441,7 +441,7 @@ class TestCarRentalAPI(unittest.TestCase):
             "year": 2023,
             "price_per_day": 50.00,
             "vehicle_type": "sedan",
-            "location": "downtown"  # Using valid location from VALID_LOCATIONS
+            "location": "mountain"  # Using valid location from VALID_LOCATIONS
         }
         requests.post(f"{BASE_URL}/admin/cars", json=city_car, headers=headers)
         
@@ -487,5 +487,167 @@ class TestCarRentalAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(any(f['car_id'] == self.test_car_id for f in response.json()))
 
+    def test_20_terrain_recommendations(self):
+        # Add test cars
+        terrains = {
+            'sedan': 'city',
+            'suv': 'mountains',
+            '4x4': 'desert'
+        }
+        for v_type, terrain in terrains.items():
+            car_data = {
+                "make": f"Test{v_type}",
+                "model": "TerrainTest",
+                "year": 2023,  # Required
+                "price_per_day": 50.00,  # Required
+                "vehicle_type": v_type,
+                "recommended_terrain": terrain,
+                "status": "available",
+                "location": terrain  # Required if your model validates locations
+            }
+            response = requests.post(
+                f"{BASE_URL}/admin/cars",
+                json=car_data,
+                headers={"Authorization": f"Bearer {self.admin_token}"}
+            )
+            self.assertEqual(response.status_code, 201)
+
+        # Test recommendations
+        tests = [
+            ('city', ['sedan']),
+            ('mountains', ['suv', '4x4']),
+            ('desert', ['4x4'])
+        ]
+        for terrain, expected_types in tests:
+            response = requests.get(
+                f"{BASE_URL}/cars/recommended?terrain={terrain}"
+            )
+            self.assertEqual(response.status_code, 200)
+            results = response.json()
+            self.assertTrue(all(
+                car['vehicle_type'] in expected_types 
+                for car in results
+            ))
+
+    def test_21_refund_system(self):
+        # Create test reservation
+        reservation_data = {
+            "car_id": self.test_car_id,
+            "start_date": (datetime.now() + timedelta(days=10)).strftime('%Y-%m-%d'),
+            "end_date": (datetime.now() + timedelta(days=12)).strftime('%Y-%m-%d')
+        }
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        requests.put(
+            f"{BASE_URL}/admin/reservations/{self.test_reservation_id}",
+            json={"status": "cancelled"},
+            headers=headers
+        )
+        refund_data = {"reservation_id": self.test_reservation_id, "reason": "Test refund"}
+        response = requests.post(
+            f"{BASE_URL}/refunds",
+            json=refund_data,
+            headers={"Authorization": f"Bearer {self.client_token}"}
+        )
+        print(response.json())
+        self.assertEqual(response.status_code, 201)
+        refund_id = response.json().get('id')
+
+        # Test refund processing
+        update_response = requests.put(
+            f"{BASE_URL}/refunds/{refund_id}",
+            json={"status": "approved"},
+            headers={"Authorization": f"Bearer {self.client_token}"}
+        )
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(update_response.json().get('status'), 'approved')
+
+    def test_21_refund_system(self):
+        # First cancel the reservation via admin endpoint
+        cancel_url = f"{BASE_URL}/admin/reservations/{self.test_reservation_id}"
+        cancel_res = requests.put(
+            cancel_url,
+            json={"status": "cancelled"},
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        print(f"Cancellation response: {cancel_res.status_code} - {cancel_res.text}")  # Debug
+        self.assertEqual(cancel_res.status_code, 200)
+
+        # Then request refund
+        refund_url = f"{BASE_URL}/refunds"
+        refund_data = {"reservation_id": self.test_reservation_id, "reason": "Test refund"}
+        response = requests.post(
+            refund_url,
+            json=refund_data,
+            headers={"Authorization": f"Bearer {self.client_token}"}
+        )
+        print(f"Refund response: {response.status_code} - {response.text}")  # Debug
+        self.assertEqual(response.status_code, 201)
+        
+        # Debug raw response
+        print(f"Raw response: {response.text}")
+        print(f"Status code: {response.status_code}")
+        
+        try:
+            self.assertEqual(response.status_code, 201)
+            response.json()  # Validate JSON is parsable
+        except Exception as e:
+            print(f"Failed to parse JSON: {e}")
+            raise
+    
+    def test_22_long_term_leasing(self):
+        # Create test car
+        car_data = {
+            "make": "LeaseTest", 
+            "model": "LeaseModel",
+            "year": 2023,
+            "price_per_day": 50,
+            "vehicle_type": "sedan",
+            "location": "city"
+        }
+        create_res = requests.post(
+            f"{BASE_URL}/admin/cars",
+            json=car_data,
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        car_id = create_res.json().get("car_id")
+        self.assertEqual(create_res.status_code, 201)
+
+        # Test monthly lease
+        lease_data = {
+            "car_id": car_id,
+            "start_date": (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d'),
+            "end_date": (datetime.now() + timedelta(days=32)).strftime('%Y-%m-%d'),
+            "rental_type": "monthly"
+        }
+        response = requests.post(
+            f"{BASE_URL}/cars/reserve",
+            json=lease_data,
+            headers={"Authorization": f"Bearer {self.client_token}"}
+        )
+        print(f"Lease response: {response.status_code} - {response.text}")  # Debug
+        self.assertEqual(response.status_code, 201)
+
+    def test_23_admin_stats(self):
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        response = requests.get(
+            f"{BASE_URL}/admin/stats",
+            headers=headers
+        )
+        self.assertEqual(response.status_code, 200)
+        stats = response.json()
+        self.assertIn('reservations_count', stats)
+        self.assertIn('revenue', stats)
+        self.assertIn('popular_cars', stats)
+
+    def test_24_admin_export(self):
+        response = requests.get(
+            f"{BASE_URL}/admin/reservations/export",
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        print(f"Export response: {response.status_code} - {response.text[:100]}...")  # Debug
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/csv', response.headers['Content-Type'])
+        self.assertIn('ID,User Email,Car Make', response.text)
+        
 if __name__ == "__main__":
     unittest.main()

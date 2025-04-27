@@ -7,5 +7,6 @@ from .insurance import Insurance
 from .damage import DamageReport
 from .user import Admin, Client
 from .favorite import Favorite
+from .refund import Refund
 
-__all__ = ['User', 'Admin', 'Client', 'Car', 'Reservation', 'Payment', 'Insurance', 'DamageReport', 'db', 'Favorite']
+__all__ = ['User', 'Admin', 'Client', 'Car', 'Reservation', 'Payment', 'Insurance', 'DamageReport', 'db', 'Favorite', 'Refund']

@@ -23,6 +23,8 @@ class Reservation(db.Model):
     damage_reports = db.relationship('DamageReport', back_populates='reservation')
 
     VALID_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed']
+    VALID_RENTAL_TYPES = ['daily', 'monthly', 'yearly']
+    
     def __init__(self, **kwargs):
         if kwargs.get('status') not in self.VALID_STATUSES:
             raise ValueError(f"Invalid status. Must be one of {self.VALID_STATUSES}")
@@ -32,9 +34,9 @@ class Reservation(db.Model):
     def calculate_price(cls, car, start_date, end_date, rental_type='daily'):
         days = (end_date - start_date).days
         if rental_type == 'monthly':
-            return (car.price_per_day * 30) * 0.9
+            return (car.price_per_day * 30) * 0.9  # 10% discount
         elif rental_type == 'yearly':
-            return (car.price_per_day * 365) * 0.8
+            return (car.price_per_day * 365) * 0.8  # 20% discount
         return days * car.price_per_day
 
     def __repr__(self):

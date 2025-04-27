@@ -4,6 +4,7 @@ from flask import make_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
 from app.models import DamageReport, Insurance, Reservation, User, Car, db
+from app.models.payment import Payment
 from app.models.user import Admin, Client
 from app.utils import validate_admin_access
 
@@ -252,3 +253,72 @@ def update_damage_report(report_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+@bp.route('/stats', methods=['GET'])
+@jwt_required()
+def get_stats():
+    if not validate_admin_access(get_jwt_identity()):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    # Get top 3 popular cars
+    popular = db.session.query(
+        Reservation.car_id,
+        Car.make,
+        Car.model,
+        db.func.count(Reservation.id).label('count')
+    ).join(Car).group_by(Reservation.car_id, Car.make, Car.model)\
+    .order_by(db.func.count(Reservation.id).desc())\
+    .limit(3).all()
+
+    return jsonify({
+        'reservations_count': Reservation.query.count(),
+        'revenue': float(db.session.query(db.func.sum(Payment.amount)).scalar() or 0),
+        'damage_costs': float(db.session.query(db.func.sum(DamageReport.repair_cost)).scalar() or 0),
+        'popular_cars': [
+            {
+                'car_id': car_id,
+                'make': make,
+                'model': model,
+                'reservation_count': count
+            } for car_id, make, model, count in popular
+        ]
+    })
+
+@bp.route('/reservations/export', methods=['GET'])
+@jwt_required()
+def export_reservations():
+    if not validate_admin_access(get_jwt_identity()):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    reservations = Reservation.query.options(
+        joinedload(Reservation.user),
+        joinedload(Reservation.car)
+    ).all()
+    
+    csv_data = "ID,User Email,Car Make,Car Model,Start Date,End Date,Total Price,Status\n"
+    for r in reservations:
+        csv_data += (
+            f"{r.id},{r.user.email},{r.car.make},{r.car.model},"
+            f"{r.start_date},{r.end_date},{r.total_price},{r.status}\n"
+        )
+    
+    response = make_response(csv_data)
+    response.headers['Content-Disposition'] = 'attachment; filename=reservations.csv'
+    response.headers['Content-Type'] = 'text/csv'
+    return response
+
+@bp.route('/reservations/<int:reservation_id>', methods=['PUT'])
+@jwt_required()
+def update_reservation(reservation_id):
+    if not validate_admin_access(get_jwt_identity()):
+        return jsonify({"error": "Admin access required"}), 403
+    
+    reservation = Reservation.query.get_or_404(reservation_id)
+    data = request.get_json()
+    
+    if 'status' in data and data['status'] in Reservation.VALID_STATUSES:
+        reservation.status = data['status']
+        db.session.commit()
+        return jsonify({"message": "Reservation updated"}), 200
+    
+    return jsonify({"error": "Invalid update"}), 400

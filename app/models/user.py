@@ -16,6 +16,7 @@ class User(db.Model, UserMixin):
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
     type = db.Column(db.String(20), nullable=False)
+    language = db.Column(db.String(10), default='en')  # 'en', 'fr', 'ar', etc.
     
     __mapper_args__ = {
         'polymorphic_identity': 'user',
@@ -65,7 +66,8 @@ class User(db.Model, UserMixin):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "driving_license": getattr(self, 'driving_license', None),
-            "perms": getattr(self, 'perms', None)
+            "perms": getattr(self, 'perms', None),
+            "language": self.language
         }
     
     def __repr__(self):

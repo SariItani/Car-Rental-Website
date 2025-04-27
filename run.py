@@ -42,7 +42,7 @@ def init_db():
                     year=2022, 
                     price_per_day=50,
                     vehicle_type='sedan',
-                    location='airport'
+                    location='city'
                 ),
                 Car(
                     make='Ford', 
@@ -50,7 +50,7 @@ def init_db():
                     year=2021, 
                     price_per_day=75,
                     vehicle_type='suv',
-                    location='hotel'
+                    location='mountains'
                 ),
                 Car(
                     make='Jeep', 
@@ -58,7 +58,7 @@ def init_db():
                     year=2023, 
                     price_per_day=100,
                     vehicle_type='4x4',
-                    location='tourist_site'
+                    location='desert'
                 )
             ]
             db.session.add_all(cars)

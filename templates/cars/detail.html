@@ -16,8 +16,8 @@
         <div class="card mb-4">
             <div class="card-body">
                 {% if current_user.is_authenticated %}
-                <button id="favorite-btn" class="btn btn-outline-primary">
-                    ♡ Add to Favorites
+                <button class="favorite-btn" data-car-id="{{ car.id }}">
+                    {{ '❤️' if car.is_favorited else '♡' }}
                 </button>
                 {% endif %}
                 <h5>${{ car.price_per_day }} <small class="text-muted">/ day</small></h5>
@@ -61,18 +61,11 @@
 
 {% block scripts %}
 <script>
-    document.getElementById('favorite-btn').addEventListener('click', async () => {
-        const response = await fetch(`/api/favorites/cars/${CAR_ID}/favorite`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${USER_TOKEN}`,
-                'Content-Type': 'application/json'
-            }
+    document.querySelector('.favorite-btn').addEventListener('click', async () => {
+        await fetch(`/api/favorites/cars/${this.dataset.carId}`, {
+            method: this.textContent.includes('❤️') ? 'DELETE' : 'POST'
         });
-        
-        if (response.ok) {
-            alert('Added to favorites!');
-        }
+        location.reload(); 
     });
     </script>
 {% endblock %}
